@@ -1,8 +1,88 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { v4 as uuid } from 'uuid'
 
+//console.log('creating worker')
 const worker = new SharedWorker(new URL('./worker.js', import.meta.url))
 
+function useTabStateUtil(sync?: number) {
+
+    const tabId = useMemo(() => {
+        if (!sessionStorage.getItem('tab_id')) {
+            sessionStorage.setItem('tab_id', uuid())
+        }
+        //console.log('this tab: ', sessionStorage.getItem('tab_id'));
+        return sessionStorage.getItem('tab_id')
+    }, [])
+
+    const [isMainTab, setIsMainTab] = useState<boolean>(false)
+
+    const _setIsMainTab = (value: boolean) => {
+        sessionStorage.setItem('is_main', value.toString())
+        setIsMainTab(value)
+    }
+
+    const getIsMainTab = () => {
+        if(sessionStorage.getItem('is_main') === null){
+            _setIsMainTab(false)
+        }
+        return sessionStorage.getItem('is_main') === 'false' ? false : true
+    }
+
+    useEffect(() => {
+
+        worker.port.addEventListener('message', e => {
+            console.log(e.data)
+            if (!e.data?.type) {
+                return
+            }
+            if (e.data.type === 'set_main_tab') {
+                //console.log('in app: setting main tab to ', e.data.tab_id)
+                if (e.data.tab_id === tabId) {
+                    //console.log('this is the main tab')
+                    //debugger
+                    _setIsMainTab(true)
+                } else {
+                    _setIsMainTab(false)
+                }
+            }
+
+            if (e.data.type == 'get_main_tab') {
+                if (e.data.main_tab == tabId) {
+                    _setIsMainTab(true)
+                }
+            }
+        })
+
+        if (sync) {
+            setInterval(() => {
+                
+                const is_main = getIsMainTab();
+                console.log('is main:', is_main)
+                setIsMainTab(is_main)
+            }, sync)
+        }
+    }, [])
+
+    return { 
+        isMainTab,
+        tabId
+    }
+}
+
+export { useTabStateUtil }
+
+/**
+ * Hook that allows you to sync state between tabs
+ * 
+ * @param {any}     initial_value   Initial value of state. Will be overwritten by 
+ * state from other tabs if there are any.
+ * @param {string}  id              Unique id to identify the state
+ * @param {boolean} persist         Whether to persis
+ * @param timeout 
+ * @param afterTimeout 
+ * 
+ * @returns 
+ */
 export default function useTabState<T>(
     initial_value: T, 
     id: string, 
@@ -15,7 +95,8 @@ export default function useTabState<T>(
         
         const local_storage_str = localStorage.getItem(id)
 
-        if (persist && local_storage_str !== null) {
+        if (persist && local_storage_str !== null && local_storage_str !== 'undefined') {
+            console.log(local_storage_str)
             return JSON.parse(local_storage_str)
         } else {
             return initial_value
@@ -25,103 +106,63 @@ export default function useTabState<T>(
 
     const [state, setState] = useState<T>(_initial_value)
 
-    const tabId = useMemo(() => {
-        if (!sessionStorage.getItem('tab_id')) {
-            sessionStorage.setItem('tab_id', uuid())
-        }
-        console.log('this tab: ', sessionStorage.getItem('tab_id'));
-        return sessionStorage.getItem('tab_id')
-    }, [])
-
-    const setIsMainTab = (value: boolean) => {
-        sessionStorage.setItem('is_main', value.toString())
-    }
-
-    const isMainTab = () => {
-        if(sessionStorage.getItem('is_main') === null){
-            setIsMainTab(false)
-        }
-        return !!sessionStorage.getItem('is_main')
-    }
-
-    //const [isMainTab, setIsMainTab] = useState<boolean>(false)
-
-    //const stateRef = useRef(state)
-    //stateRef.current = state
-
-    //const isMainTabRef = useRef(isMainTab)
-    //isMainTabRef.current = isMainTab
-
-    // const worker = useMemo(() => {
-    //     return new SharedWorker(new URL('./worker.js', import.meta.url))
-    // }, [])
+    const { isMainTab, tabId } = useTabStateUtil(500)
 
     const _setState = (new_state: T) => {
         setState(new_state)
-        // worker.port.postMessage({
-        //     type: 'set_state',
-        //     from_tab: tabId,
-        //     id: id,
-        //     state: new_state
-        // })
+        worker.port.postMessage({
+            type: 'set_state',
+            from_tab: tabId,
+            id: id,
+            state: new_state
+        })
     }
-
-
-    const channel = useMemo(() => {
-        //console.log('creating broadcast channel at ' + id)
-        return new BroadcastChannel(id)
-    }, [])
 
     useEffect(() => {
 
         if (timeout) {
             setInterval(() => {
                 _setState(initial_value)
+                afterTimeout()
             }, timeout)
         }
 
-        //setIsMainTab(true)
+        worker.port.addEventListener('message', e => {
+            if (!e.data?.type) {
+                return
+            }
 
-        worker.port.onmessage = e => {
-            console.log(e.data)
-            if (e.data.type === 'get_tabs') {
-                worker.port.postMessage({
-                    type: 'share_tab_id',
-                    tab_id: tabId
-                })
-            } else if (e.data.type === 'set_main_tab') {
-                console.log('setting main tab to ', e.data.tab_id)
-                if (e.data.tab_id === tabId) {
-                    console.log('this is the main tab')
-                    //debugger
-                    setIsMainTab(true)
-                } else {
-                    setIsMainTab(false)
+            switch (e.data.type) {
+                case 'get_tabs': {
+                    worker.port.postMessage({
+                        type: 'share_tab_id',
+                        tab_id: tabId
+                    })
+                }
+                case 'set_state': {
+                    if (e.data.id == id && e.data.from_tab != tabId) {
+                        setState(e.data.state)
+                    }
+                }
+                case 'get': {
+                    if (e.data.from_tab === tabId && e.data.id === id) {
+                        setState(e.data.state)
+                    }
                 }
             }
+            
+        })
 
-            if (e.data.type == 'set_state' && e.data.id == id && e.data.from_tab != tabId) {
-                console.log('setting state')
-                console.log(e.data.from_tab)
-                console.log(tabId)
-                //setState(e.data.state)
-            }
-        }
+        worker.port.start()
 
-        // channel.addEventListener('message', (e) => {
-        //     if (e.data.type === 'get') {
-        //         channel.postMessage({
-        //             type: 'set',
-        //             state: stateRef.current
-        //         })
-        //     } else {
-        //         setState(e.data.state)
-        //     }
+        worker.port.postMessage({
+            type: 'get',
+            from_tab: tabId,
+            id: id
+        })
 
-        // })
-
-        channel.postMessage({
-            type: 'get'
+        worker.port.postMessage({
+            type: 'get_main_tab'
         })
     }, [])
 
@@ -131,13 +172,8 @@ export default function useTabState<T>(
         }
     }, [state])
 
-    // useEffect(() => {
-    //     console.log('in tab: ', isMainTab)
-    // }, [isMainTab])
-
     return [
         state,
-        _setState,
-        isMainTab
+        _setState
     ] as const
 }
