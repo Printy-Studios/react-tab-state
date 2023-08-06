@@ -21,6 +21,23 @@ Simply import and use the `useTabState()` hook just like you would use a normal
 `useState()` hook. Just like `useState()`, `useTabState()` returns an array with
  two variables - one for the state and the other for setting state.
 
+## Example
+
+```
+    import useTabState from '@printy/react-tab-state'
+    function MyComponent() {
+        const [counter, setCounter] = useTabState(0, 'counter')
+
+        return (
+            <button
+                onClick={() => setCounter(counter + 1)}
+            >
+                {counter}
+            </button>
+        )
+    }
+```
+
 ## API
 
 ### **useTabState\<T\>(initial_state: T, id: string, persist: boolean = false, timeout: number = null, afterTimeout?: any)**
