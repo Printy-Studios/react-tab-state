@@ -4,7 +4,7 @@ import { v4 as uuid } from 'uuid'
 //console.log('creating worker')
 const worker = new SharedWorker(new URL('./worker.js', import.meta.url))
 
-function useTabStateUtil(sync?: number) {
+function useTabStateUtil(sync_main_tab?: number) {
 
     const tabId = useMemo(() => {
         if (!sessionStorage.getItem('tab_id')) {
@@ -53,13 +53,12 @@ function useTabStateUtil(sync?: number) {
             }
         })
 
-        if (sync) {
+        if (sync_main_tab) {
             setInterval(() => {
-                
                 const is_main = getIsMainTab();
                 console.log('is main:', is_main)
                 setIsMainTab(is_main)
-            }, sync)
+            }, sync_main_tab)
         }
     }, [])
 

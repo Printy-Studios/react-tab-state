@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.1
+## 1.1.0
 
 Changed from using BroadcastChannel API to 
 [SharedWorker API](https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker).
