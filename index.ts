@@ -1,3 +1,5 @@
-import useTabState from './useTabState';
+import useTabState, { useTabStateUtil } from './useTabState';
 
+
+export { useTabStateUtil }
 export default useTabState
