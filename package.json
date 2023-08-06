@@ -1,6 +1,6 @@
 {
   "name": "@printy/react-tab-state",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Sync and persist state across tabs",
   "main": "index.js",
   "scripts": {
