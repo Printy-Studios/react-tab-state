@@ -15,10 +15,5 @@
   ],
   "author": "JorensM",
   "license": "MIT",
-  "devDependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@types/react": "^18.2.18",
-    "@types/react-dom": "^18.2.7"
-  }
+  "repository": "github:Printy-Studios/react-tab-state"
 }
