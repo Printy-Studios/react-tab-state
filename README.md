@@ -90,4 +90,4 @@ Returns an object with the following properties -
 
 ## Support
 
-For any questions or issues feel free to contact me at jorensmerenjanu@gmail.com
+For any questions or issues feel free to submit an issue
