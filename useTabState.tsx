@@ -74,14 +74,17 @@ export { useTabStateUtil }
 /**
  * Hook that allows you to sync state between tabs
  * 
- * @param {any}     initial_value   Initial value of state. Will be overwritten by 
- * state from other tabs if there are any.
- * @param {string}  id              Unique id to identify the state
- * @param {boolean} persist         Whether to persis
- * @param timeout 
- * @param afterTimeout 
+ * @param {any}         initial_value   Initial value of state. Will be 
+ * overwritten by state from other tabs if there are any.
+ * @param {string}      id              Unique id to identify the state
+ * @param {boolean}     [persist=false] Whether to persist the state even after 
+ * all tabs have been closed
+ * @param {number}      [timeout]       Timeout after which state will be reset 
+ * to initial state. Optional
+ * @param {function}    [afterTimeout]  Function to run after timeout has been
+ * reached  
  * 
- * @returns 
+ * @returns [state, setState] array in the same format as a useState() hook
  */
 export default function useTabState<T>(
     initial_value: T, 
