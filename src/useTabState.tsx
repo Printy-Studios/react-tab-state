@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 const worker = new SharedWorker(new URL('./worker.js', import.meta.url))
 
-export default function useTabState<T>(initial_state: T, id: string){
+export default function useTabState<T>(initial_state: T, id: string): [T, (new_state: T) => void]{
     const [localState, setLocalState] = useState<T>(initial_state);
 
     const setTabState = (new_state: T) => {
@@ -16,6 +16,8 @@ export default function useTabState<T>(initial_state: T, id: string){
 
     useEffect(() => {
         worker.port.addEventListener('message', e => {
+            console.log('received message');
+            e.data;
             if (!e.data?.type) {
                 return
             }
@@ -23,7 +25,12 @@ export default function useTabState<T>(initial_state: T, id: string){
             switch (e.data.type){
                 case 'set_state': {
                     if (e.data.id == id) {
-                        setLocalState(e.data.state)
+                        if(e.data.state) {
+                            setLocalState(e.data.state)
+                        } else {
+                            setLocalState(initial_state)
+                        }
+                        
                     }
                 }
             }
@@ -34,4 +41,6 @@ export default function useTabState<T>(initial_state: T, id: string){
             id: id
         })
     }, [])
+
+    return [localState, setTabState];
   }
