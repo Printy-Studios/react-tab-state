@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.1
+
+Added `useTabStateControl` hook which allows you to use any state management library
+together with this one.
+
 ## 1.1.0
 
 Changed from using BroadcastChannel API to 
