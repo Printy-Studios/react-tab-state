@@ -17,8 +17,6 @@ export default function useTabStateControl<T>(state: T, setState: (new_state: T)
 
     useEffect(() => {
         worker.port.addEventListener('message', e => {
-            console.log('received message');
-            e.data;
             if (!e.data?.type) {
                 return
             }
